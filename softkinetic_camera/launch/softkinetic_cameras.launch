@@ -15,6 +15,11 @@ The arguments given are the device indices of the cameras determined by the Dept
       <param name="no_gridpoints" type="int" value="200" />
       <param name="wall_distance" type="double" value="3.5" />
       <param name="wall_edge_range" type="double" value="4.0" />
+      <param name="use_costmap_clearing_ball" type="bool" value="false" />
+      <param name="ball_r" type="double" value="2.0" />
+      <param name="ball_intervall_pi" type="int" value="50" />
+      <param name="ball_intervall_2pi" type="int" value="50" />
+
 
   	</node>
   	<node name="softkinetic_right" pkg="softkinetic_camera" type="softkinetic_bringup_node" args="1" output="screen">
@@ -26,6 +31,10 @@ The arguments given are the device indices of the cameras determined by the Dept
       <param name="use_costmap_clearing_wall" type="bool" value="false" />
       <param name="no_gridpoints" type="int" value="200" />
       <param name="wall_distance" type="double" value="3.5" />
-      <param name="wall_edge_range" type="double" value="4.0" /> 
+      <param name="wall_edge_range" type="double" value="4.0" />
+      <param name="use_costmap_clearing_ball" type="bool" value="false" />
+      <param name="ball_r" type="double" value="2.0" />
+      <param name="ball_intervall_pi" type="int" value="50" />
+      <param name="ball_intervall_2pi" type="int" value="50" /> 
     </node>
 </launch>

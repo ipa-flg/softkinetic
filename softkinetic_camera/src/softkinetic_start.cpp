@@ -56,6 +56,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <math.h>
 
 //ros include files
 #include <ros/ros.h>
@@ -121,6 +122,11 @@ bool use_costmap_clearing_wall;
 int no_gridpoints;
 double wall_distance;
 double wall_edge_range;
+/* costmap clearing ball */
+bool use_costmap_clearing_ball;
+double ball_r;
+int ball_intervall_pi;
+int ball_intervall_2pi;
 /* shutdown request*/
 bool ros_node_shutdown = false;
 
@@ -245,6 +251,38 @@ void setCostmapClearingWall(sensor_msgs::PointCloud2 &Input)
     pcl::toROSMsg (*cloud_pcl, Input);
 }
 
+void setCostmapClearingBall(sensor_msgs::PointCloud2 &Input)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr
+        cloud_pcl(new pcl::PointCloud<pcl::PointXYZ> ());
+    pcl::fromROSMsg (Input, *cloud_pcl);
+
+    double t_pi = M_PI/ball_intervall_pi;
+    double t_2pi = 2*M_PI/ball_intervall_pi;
+
+    double phi = 0;
+    double theta = 0;
+
+    pcl::PointXYZ p;
+
+    while(theta < M_PI)
+    {
+        while(phi < 2*M_PI)
+        {
+            p.x = ball_r * sin(theta) * cos(phi);
+            p.y = ball_r * sin(theta) * sin(phi);
+            p.z = ball_r * cos(theta);
+
+            cloud_pcl->push_back(p);            
+
+            phi += t_2pi;
+        }
+        phi = 0;
+        theta += t_pi;
+    }
+    pcl::toROSMsg (*cloud_pcl, Input);
+}
+
 // New depth sample event varsace tieshandler
 void onNewDepthSample(DepthNode node, DepthNode::NewSampleReceivedData data)
 {
@@ -319,6 +357,11 @@ void onNewDepthSample(DepthNode node, DepthNode::NewSampleReceivedData data)
         setCostmapClearingWall(cloud);
     }
     
+    if(use_costmap_clearing_ball)
+    {
+        setCostmapClearingBall(cloud);
+    }
+
     pub_cloud.publish (cloud);
     g_context.quit();
 }
@@ -583,6 +626,18 @@ int main(int argc, char* argv[])
         nh.param<double>("wall_distance", wall_distance, 3.5);
         // get length of an edge of the wall
         nh.param<double>("wall_edge_range", wall_edge_range, 4.0);
+    };
+
+    //check for usage of clearing ball
+    nh.param<bool>("use_costmap_clearing_ball", use_costmap_clearing_ball, false);
+    if(use_costmap_clearing_ball)
+    {
+        // get radius
+        nh.param<double>("ball_r", ball_r, 2.0);
+        // get disc intervall in pi direction
+        nh.param<int>("ball_intervall_pi", ball_intervall_pi, 50);
+        // get disc intervall in 2*pi direction
+        nh.param<int>("ball_intervall_2pi", ball_intervall_2pi, 50);
     };
 
     offset = ros::Time::now().toSec();
