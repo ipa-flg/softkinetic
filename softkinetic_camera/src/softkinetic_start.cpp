@@ -248,6 +248,27 @@ void setCostmapClearingWall(sensor_msgs::PointCloud2 &Input)
         p.y = -0.5 * wall_edge_range;
         p.x = p.x + t;
     }
+
+    // insert ground plane
+    p.x = 0.689;
+    p.y = -0.5 * wall_edge_range;
+    p.z = 0;
+
+    for(int i=0; i<no_gridpoints; i++ )
+    {       
+        for(int j=0; j<no_gridpoints; j++)
+        {
+            p.y = p.y + t;
+            cloud_pcl->push_back(p);
+        }
+        p.y = -0.5 * wall_edge_range;
+        p.z = p.z + t;
+	if(p.z >= wall_distance)
+	{
+	 break;
+	}
+    }
+	
     pcl::toROSMsg (*cloud_pcl, Input);
 }
 

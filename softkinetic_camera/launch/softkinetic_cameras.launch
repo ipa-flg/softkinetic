@@ -8,17 +8,17 @@ The arguments given are the device indices of the cameras determined by the Dept
     <node name="softkinetic_left" pkg="softkinetic_camera" type="softkinetic_bringup_node" args="0" output="screen" >
   		<param name="camera_link" type="string" value="softkinetic_left_link" />
   		<param name="confidence_threshold" type="int" value="150" />
-		  <param name="use_radius_filter" type="bool" value="false" />
+		  <param name="use_radius_filter" type="bool" value="true" />
 		  <param name="search_radius" type="double" value="0.05" />
 		  <param name="minNeighboursInRadius" type="int" value="50" />
-      <param name="use_costmap_clearing_wall" type="bool" value="false" />
-      <param name="no_gridpoints" type="int" value="200" />
-      <param name="wall_distance" type="double" value="3.5" />
+      <param name="use_costmap_clearing_wall" type="bool" value="true" />
+      <param name="no_gridpoints" type="int" value="400" />
+      <param name="wall_distance" type="double" value="1.5" />
       <param name="wall_edge_range" type="double" value="4.0" />
       <param name="use_costmap_clearing_ball" type="bool" value="false" />
       <param name="ball_r" type="double" value="2.0" />
-      <param name="ball_intervall_pi" type="int" value="50" />
-      <param name="ball_intervall_2pi" type="int" value="50" />
+      <param name="ball_intervall_pi" type="int" value="100" />
+      <param name="ball_intervall_2pi" type="int" value="100" />
 
 
   	</node>
