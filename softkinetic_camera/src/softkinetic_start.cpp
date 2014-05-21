@@ -116,6 +116,11 @@ int confidence_threshold;
 bool use_radius_filter;
 double search_radius;
 int minNeighboursInRadius;
+/* costmap clearing wall */
+bool use_costmap_clearing_wall;
+int no_gridpoints;
+double wall_distance;
+double wall_edge_range;
 /* shutdown request*/
 bool ros_node_shutdown = false;
 
@@ -179,12 +184,12 @@ void downsampleCloud(sensor_msgs::PointCloud2 &Input)
 
         pcl::fromROSMsg (Input, *cloud_to_filter);
 
-       ROS_INFO_STREAM("Starting downsampling");
+       //ROS_INFO_STREAM("Starting downsampling");
        pcl::VoxelGrid<pcl::PointXYZ> sor;
        sor.setInputCloud (cloud_to_filter);
        sor.setLeafSize (0.01f, 0.01f, 0.01f);
        sor.filter (*cloud_filtered);
-       ROS_INFO_STREAM("downsampled!");   
+       //ROS_INFO_STREAM("downsampled!");   
        
        pcl::toROSMsg (*cloud_filtered, Input);      
              
@@ -204,14 +209,40 @@ void filterCloudRadiusBased(sensor_msgs::PointCloud2 &Input)
     ror.setRadiusSearch(search_radius);
     ror.setMinNeighborsInRadius(minNeighboursInRadius);
     // apply filter
-    ROS_INFO_STREAM("Starting filtering");
+    //ROS_INFO_STREAM("Starting filtering");
     double old_ = ros::Time::now().toSec(); 
     ror.filter(*cloud_filtered);
     double new_= ros::Time::now().toSec() - old_;
-    ROS_INFO_STREAM("filtered in " << new_ << " seconds");
+    //ROS_INFO_STREAM("filtered in " << new_ << " seconds");
     cloud.header.stamp = ros::Time::now();
 
     pcl::toROSMsg (*cloud_filtered, Input);
+}
+
+void setCostmapClearingWall(sensor_msgs::PointCloud2 &Input)
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr
+        cloud_pcl(new pcl::PointCloud<pcl::PointXYZ> ());
+    pcl::fromROSMsg (Input, *cloud_pcl);
+    
+    double t = wall_edge_range/no_gridpoints;
+    pcl::PointXYZ p;    
+    p.x = -0.5 * wall_edge_range;
+    p.y = -0.5 * wall_edge_range;
+    p.z = wall_distance;
+    cloud_pcl->push_back(p);
+    
+    for(int i=0; i<no_gridpoints; i++ )
+    {       
+        for(int j=0; j<no_gridpoints; j++)
+        {
+            p.y = p.y + t;
+            cloud_pcl->push_back(p);
+        }
+        p.y = -0.5 * wall_edge_range;
+        p.x = p.x + t;
+    }
+    pcl::toROSMsg (*cloud_pcl, Input);
 }
 
 // New depth sample event varsace tieshandler
@@ -280,6 +311,12 @@ void onNewDepthSample(DepthNode node, DepthNode::NewSampleReceivedData data)
     {
         downsampleCloud(cloud);
 		filterCloudRadiusBased(cloud);
+    }
+
+    // check for usage of costmap clearing wall
+    if(use_costmap_clearing_wall)
+    {
+        setCostmapClearingWall(cloud);
     }
     
     pub_cloud.publish (cloud);
@@ -521,21 +558,33 @@ int main(int argc, char* argv[])
     nh.param<bool>("use_radius_filter", use_radius_filter, false);
     if(use_radius_filter)
     {
- 	if(!nh.hasParam("search_radius"))
-       	{	
-		ROS_ERROR_STREAM("For " << ros::this_node::getName() << ", parameter 'search_radius' is not set on server.");
-		ros_node_shutdown = true;
-	};
-	nh.param<double>("search_radius", search_radius, 0.5);
+        if(!nh.hasParam("search_radius"))
+       	{
+            ROS_ERROR_STREAM("For " << ros::this_node::getName() << ", parameter 'search_radius' is not set on server.");
+            ros_node_shutdown = true;
+        }
+	    nh.param<double>("search_radius", search_radius, 0.5);
 	
-	if(!nh.hasParam("minNeighboursInRadius"))
-	{       		
-		ROS_ERROR_STREAM("For " << ros::this_node::getName() << ", parameter 'minNeighboursInRadius' is not set on server.");
-		ros_node_shutdown;
-	};	
-	nh.param<int>("minNeighboursInRadius", minNeighboursInRadius, 0);
+    	if(!nh.hasParam("minNeighboursInRadius"))
+    	{       		
+    		ROS_ERROR_STREAM("For " << ros::this_node::getName() << ", parameter 'minNeighboursInRadius' is not set on server.");
+    		ros_node_shutdown;
+    	}
+    	nh.param<int>("minNeighboursInRadius", minNeighboursInRadius, 0);
     };
     
+    // check for usage of clearing wall
+    nh.param<bool>("use_costmap_clearing_wall", use_costmap_clearing_wall, false);
+    if(use_costmap_clearing_wall)
+    {
+        // get number of gridpoints along an edge iof the wall
+        nh.param<int>("no_gridpoints", no_gridpoints, 200);
+        // get distance from wall to camera
+        nh.param<double>("wall_distance", wall_distance, 3.5);
+        // get length of an edge of the wall
+        nh.param<double>("wall_edge_range", wall_edge_range, 4.0);
+    };
+
     offset = ros::Time::now().toSec();
     //initialize image transport object
     image_transport::ImageTransport it(nh);
